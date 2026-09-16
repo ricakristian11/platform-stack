@@ -56,7 +56,7 @@ jobs:
       - name: Security scan
         # PIN TO A SHA — see the March 2026 trivy-action incident in the READ.
         # Find the current commit for v0.36.0+ on the releases page.
-        uses: aquasecurity/trivy-action@<full-40-char-commit-sha>   # v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25   # v0.36.0
         with:
           scan-type: config
           scan-ref: .
