@@ -1,0 +1,111 @@
+name: terraform
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write        # request the OIDC token — REQUIRED
+  contents: read
+  pull-requests: write   # post the plan comment
+
+env:
+  TF_VERSION: "1.15.8"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Show the OIDC subject this run will present
+        run: echo "sub ~ repo:${{ github.repository }}:ref:${{ github.ref }}"
+
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - run: aws sts get-caller-identity      # proves federation; shows the ROLE
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - run: terraform fmt -check -recursive
+      - run: terraform init
+      - run: terraform validate
+
+      - uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: v0.64.0
+      - run: tflint --init
+        env:
+          GITHUB_TOKEN: ${{ github.token }}    # avoids rate limits fetching the ruleset
+      - run: tflint -f compact --recursive
+
+      - name: Module tests (no credentials needed)
+        run: |
+          cd modules/network
+          terraform init -backend=false
+          terraform test
+
+      - name: Security scan
+        # PIN TO A SHA — see the March 2026 trivy-action incident in the READ.
+        # Find the current commit for v0.36.0+ on the releases page.
+        uses: aquasecurity/trivy-action@<full-40-char-commit-sha>   # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: '0'         # report only; flip to '1' to gate
+
+      - name: Plan
+        id: plan
+        run: terraform plan -no-color -input=false -out=tfplan
+        continue-on-error: true
+
+      - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+        with:
+          script: |
+            const body = `#### Terraform Plan \`${{ steps.plan.outcome }}\`
+            <details><summary>Show plan</summary>
+
+            \`\`\`terraform
+            ${process.env.PLAN}
+            \`\`\`
+            </details>`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+  apply:
+    needs: plan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production        # pauses for required reviewers
+    steps:
+      - uses: actions/checkout@v6
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - run: terraform init                   # fresh runner: init again
+      - run: terraform apply -auto-approve -input=false

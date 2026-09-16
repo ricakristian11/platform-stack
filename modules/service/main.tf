@@ -1,5 +1,5 @@
 resource "aws_ecs_cluster" "main" {
-  name = "${local.name}-cluster"
+  name = "${var.project}-cluster"
   setting {
     name  = "containerInsights"
     value = "disabled"                 # costs money
@@ -16,12 +16,12 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 }
 
 resource "aws_cloudwatch_log_group" "app" {
-  name              = "/ecs/${local.name}"
+  name              = "/ecs/${var.project}"
   retention_in_days = 7                # default is FOREVER
 }
 
 resource "aws_ecs_task_definition" "app" {
-  family                   = "${local.name}-hbsvc"
+  family                   = "${var.project}-hbsvc"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = 256
@@ -31,7 +31,7 @@ resource "aws_ecs_task_definition" "app" {
 
   container_definitions = jsonencode([{
     name      = "hbsvc"
-    image     = "${aws_ecr_repository.app.repository_url}:1.0"
+    image     = var.image_uri
     essential = true
     portMappings = [{ containerPort = var.app_port, protocol = "tcp" }]
     environment  = [{ name = "PORT", value = tostring(var.app_port) }]

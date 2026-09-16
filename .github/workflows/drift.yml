@@ -1,0 +1,51 @@
+name: drift
+
+on:
+  schedule:
+    - cron: "0 13 * * 1-5"     # 9am ET, weekdays
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.15.8"
+          terraform_wrapper: false      # we want the REAL exit code
+      - run: terraform init
+
+      - name: Detect drift
+        id: drift
+        run: |
+          set +e                                        # exit 2 is not a failure
+          terraform plan -refresh-only -detailed-exitcode -no-color -input=false > plan.txt
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Open an issue on drift
+        if: steps.drift.outputs.code == '2'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('plan.txt', 'utf8').slice(0, 60000);
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Drift detected ${new Date().toISOString().slice(0,10)}`,
+              body: '```\n' + plan + '\n```',
+            });
+
+      - name: Fail on real errors only
+        if: steps.drift.outputs.code == '1'
+        run: exit 1

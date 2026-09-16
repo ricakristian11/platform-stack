@@ -10,7 +10,7 @@ data "aws_iam_policy_document" "ecs_tasks_assume" {
 }
 # used BY ECS before your container starts
 resource "aws_iam_role" "task_execution" {
-  name               = "${local.name}-task-execution"
+  name               = "${var.project}-task-execution"
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume.json
 }
 
@@ -21,6 +21,6 @@ resource "aws_iam_role_policy_attachment" "task_execution" {
 
 # assumed BY YOUR APP; intentionally empty for hbsvc
 resource "aws_iam_role" "task" {
-  name               = "${local.name}-task"
+  name               = "${var.project}-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_tasks_assume.json
 }

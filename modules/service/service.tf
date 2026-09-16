@@ -1,13 +1,13 @@
 resource "aws_ecs_service" "app" {
-  name            = "${local.name}-svc"
+  name            = "${var.project}-svc"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.app.arn
   desired_count   = 1
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = [for s in aws_subnet.public : s.id]
-    security_groups  = [aws_security_group.app.id]
+    subnets          = var.subnet_ids
+    security_groups  = [var.app_sg_id]
     assign_public_ip = true             # the $3.65-vs-$33 decision, as a boolean
   }
 
