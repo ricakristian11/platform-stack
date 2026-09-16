@@ -1,10 +1,10 @@
 module "network" {
   source = "./modules/network"
 
-  project = var.project
-  vpc_cidr = var.vpc_cidr
+  project        = var.project
+  vpc_cidr       = var.vpc_cidr
   public_subnets = var.public_subnets
-  app_port = var.app_port
+  app_port       = var.app_port
 }
 
 module "service" {

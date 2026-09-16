@@ -2,7 +2,7 @@ resource "aws_ecs_cluster" "main" {
   name = "${var.project}-cluster"
   setting {
     name  = "containerInsights"
-    value = "disabled"                 # costs money
+    value = "disabled" # costs money
   }
 }
 
@@ -17,7 +17,7 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 
 resource "aws_cloudwatch_log_group" "app" {
   name              = "/ecs/${var.project}"
-  retention_in_days = 7                # default is FOREVER
+  retention_in_days = 7 # default is FOREVER
 }
 
 resource "aws_ecs_task_definition" "app" {
@@ -30,9 +30,9 @@ resource "aws_ecs_task_definition" "app" {
   task_role_arn            = aws_iam_role.task.arn
 
   container_definitions = jsonencode([{
-    name      = "hbsvc"
-    image     = var.image_uri
-    essential = true
+    name         = "hbsvc"
+    image        = var.image_uri
+    essential    = true
     portMappings = [{ containerPort = var.app_port, protocol = "tcp" }]
     environment  = [{ name = "PORT", value = tostring(var.app_port) }]
     logConfiguration = {

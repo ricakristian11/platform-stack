@@ -1,7 +1,7 @@
 resource "aws_ecr_repository" "app" {
-  name = "${local.name}-hbsvc"
+  name                 = "${local.name}-hbsvc"
   image_tag_mutability = "IMMUTABLE"
-  force_delete = true
+  force_delete         = true
   encryption_configuration { encryption_type = "AES256" }
   tags = { Name = "${local.name}-hbsvc" }
 }

@@ -8,12 +8,12 @@ resource "aws_ecs_service" "app" {
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.app_sg_id]
-    assign_public_ip = true             # the $3.65-vs-$33 decision, as a boolean
+    assign_public_ip = true # the $3.65-vs-$33 decision, as a boolean
   }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.app.arn
-    container_name   = "hbsvc"          # must match container_definitions
+    container_name   = "hbsvc" # must match container_definitions
     container_port   = var.app_port
   }
 
@@ -21,8 +21,8 @@ resource "aws_ecs_service" "app" {
 
   deployment_circuit_breaker {
     enable   = true
-    rollback = true                     # a deploy that never goes healthy rolls back
+    rollback = true # a deploy that never goes healthy rolls back
   }
 
-  depends_on = [aws_lb_listener.http]   # rare legitimate depends_on
+  depends_on = [aws_lb_listener.http] # rare legitimate depends_on
 }

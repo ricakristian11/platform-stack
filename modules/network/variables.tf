@@ -1,5 +1,5 @@
 variable "project" {
-  type = string
+  type        = string
   description = "Naming prefix"
 }
 
@@ -7,7 +7,7 @@ variable "vpc_cidr" {
   type        = string
   description = "CIDR for the VPC"
   validation {
-    condition = can(cidrhost(var.vpc_cidr, 0))
+    condition     = can(cidrhost(var.vpc_cidr, 0))
     error_message = "vpc_cidr must be a valid CIDR block."
   }
 }
