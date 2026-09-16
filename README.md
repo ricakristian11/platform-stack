@@ -29,6 +29,25 @@ Internet → ALB (2 AZs, :80) → target group (ip, GET /health)
   rolls back.
 - **Immutable ECR tags** — a version tag means exactly one image.
  
+ ## CI/CD
+
+GitHub Actions authenticates to AWS via **OIDC federation** — no access
+keys stored anywhere. Every PR runs `fmt`, `validate`, TFLint (with the
+AWS ruleset), module tests under a mocked provider, a Trivy
+configuration scan, and posts the plan as a comment. Merges to `main`
+apply behind a required-reviewer environment gate. A scheduled job runs
+`plan -refresh-only -detailed-exitcode` on weekdays and opens an issue
+on drift. Third-party actions are pinned to commit SHAs.
+
+The IAM trust policy accounts for GitHub's immutable OIDC subject format
+(repositories created after July 2026).
+
+## Module structure
+
+- `modules/network` — VPC, subnets, routing, security groups (+ tests)
+- `modules/service` — IAM, ECS cluster, task definition, service, ALB
+- root — ECR, OIDC provider, module composition
+
 ## Usage
  
 ```bash
@@ -42,5 +61,4 @@ ALB ~$16–18/mo · Fargate ~$9/mo · public IPv4 ~$3.65/mo. Destroyed
 between sessions.
  
 ## Next
-- v0.2: modules + CI (OIDC, plan-on-PR, Trivy scan)
 - v0.3: migrate to Kubernetes
