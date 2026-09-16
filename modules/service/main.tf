@@ -17,7 +17,7 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 
 resource "aws_cloudwatch_log_group" "app" {
   name              = "/ecs/${var.project}"
-  retention_in_days = 7 # default is FOREVER
+  retention_in_days = 14 # default is FOREVER
 }
 
 resource "aws_ecs_task_definition" "app" {
