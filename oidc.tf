@@ -1,6 +1,7 @@
 variable "github_repo" {
   type        = string
   description = "owner/repo for the trust policy"
+  default     = "ricakristian11/platform-stack"
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
